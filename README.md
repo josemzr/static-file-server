@@ -44,6 +44,11 @@ SHOW_LISTING=true
 # Folder with the content to serve.
 FOLDER=/web
 
+# Subdirectory (relative to $FOLDER) where PUT and POST requests may upload
+# files. Uploads are streamed to disk and subdirectories are created on
+# demand. Set to an empty string to disable uploads entirely.
+UPLOAD_DIR=uploads
+
 # URL path prefix. If 'my.file' is in the root of $FOLDER and $URL_PREFIX is
 # '/my/place' then file is retrieved with 'http://$HOST:$PORT/my/place/my.file'.
 URL_PREFIX=
@@ -151,3 +156,44 @@ docker run -d \
 # OR
 docker run -it halverneus/static-file-server:latest help
 ```
+
+## Uploads (PUT / POST)
+
+This fork adds file upload support. When `UPLOAD_DIR` is set (default:
+`uploads`), `PUT` and `POST` requests write the request body into
+`$FOLDER/$UPLOAD_DIR`. Subdirectories are created on demand, and paths are
+sanitized so uploads can never escape the upload directory (path traversal
+is rejected).
+
+Uploads can be addressed with or without the upload prefix in the URL:
+
+```
+PUT /uploads/file.txt  -> $FOLDER/uploads/file.txt
+PUT /file.txt          -> $FOLDER/uploads/file.txt
+```
+
+### With curl
+
+```bash
+curl --upload-file myfile.bin http://localhost:8080/uploads/myfile.bin
+# or equivalently:
+curl -X PUT --data-binary @myfile.bin http://localhost:8080/myfile.bin
+```
+
+Uploaded files are served back immediately, e.g.
+`http://localhost:8080/uploads/myfile.bin`.
+
+### Docker example
+
+```bash
+docker run -d \
+    -v /home/me/data/upload-folder:/web \
+    -e FOLDER=/web \
+    -e UPLOAD_DIR=uploads \
+    -p 8080:8080 \
+    ghcr.io/josemzr/static-file-server:latest
+```
+
+Set `UPLOAD_DIR=` (empty) to disable uploads entirely. Note: this feature is
+intended for trusted, private networks — there is no authentication, so do
+not expose it to the public internet without a reverse proxy or access key.

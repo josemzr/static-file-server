@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"crypto/tls"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -116,6 +117,68 @@ func WithLogging(serveFile FileServerFunc) FileServerFunc {
 func Basic(serveFile FileServerFunc, folder string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		serveFile(w, r, folder+r.URL.Path)
+	}
+}
+
+// WithUploads wraps an HTTP handler so that PUT and POST requests write the
+// request body into the upload directory (by default `folder/uploads`).
+// Uploads are addressed either with or without the upload prefix in the URL:
+//
+//	PUT /uploads/file.txt    -> <folder>/uploads/file.txt
+//	PUT /file.txt            -> <folder>/uploads/file.txt
+//
+// Paths are sanitized so uploads cannot escape the upload directory.
+// Upload subdirectories are created on demand. All other methods fall through
+// to the wrapped handler.
+func WithUploads(serve http.HandlerFunc, folder, uploadDir string) http.HandlerFunc {
+	if uploadDir == "" {
+		uploadDir = "uploads"
+	}
+	root := path.Join(folder, uploadDir)
+
+	// Public URL prefix that clients may use to address uploads (e.g.
+	// "/uploads/"). Stripped from the request path before joining, so the
+	// prefix is not duplicated on disk.
+	publicPrefix := path.Join("/", uploadDir) + "/"
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut && r.Method != http.MethodPost {
+			serve(w, r)
+			return
+		}
+
+		// Normalize the request path, stripping the public upload prefix if
+		// present, then resolve against the upload root.
+		clean := path.Clean("/" + strings.TrimPrefix(r.URL.Path, "/"))
+		if strings.HasPrefix(clean, publicPrefix) {
+			clean = path.Clean("/" + strings.TrimPrefix(clean, publicPrefix))
+		}
+		dest := path.Join(root, clean)
+		if dest != root && !strings.HasPrefix(dest, root+"/") {
+			http.Error(w, "invalid upload path", http.StatusBadRequest)
+			return
+		}
+
+		// Create any missing parent directories.
+		if err := os.MkdirAll(path.Dir(dest), 0755); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Stream the request body to the destination file.
+		f, err := os.Create(dest)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer f.Close()
+		if _, err := io.Copy(f, r.Body); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusCreated)
+		fmt.Fprintf(w, "uploaded %s\n", clean)
 	}
 }
 

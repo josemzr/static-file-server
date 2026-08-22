@@ -30,6 +30,7 @@ var (
 		URLPrefix     string   `yaml:"url-prefix"`
 		Referrers     []string `yaml:"referrers"`
 		AccessKey     string   `yaml:"access-key"`
+		UploadDir     string   `yaml:"upload-dir"`
 	}
 )
 
@@ -47,6 +48,7 @@ const (
 	tlsMinVersKey  = "TLS_MIN_VERS"
 	urlPrefixKey   = "URL_PREFIX"
 	accessKeyKey   = "ACCESS_KEY"
+	uploadDirKey   = "UPLOAD_DIR"
 )
 
 var (
@@ -63,6 +65,7 @@ var (
 	defaultURLPrefix   = ""
 	defaultCors        = false
 	defaultAccessKey   = ""
+	defaultUploadDir   = "uploads"
 )
 
 func init() {
@@ -84,6 +87,7 @@ func setDefaults() {
 	Get.URLPrefix = defaultURLPrefix
 	Get.Cors = defaultCors
 	Get.AccessKey = defaultAccessKey
+	Get.UploadDir = defaultUploadDir
 }
 
 // Load the configuration file.
@@ -136,6 +140,7 @@ func overrideWithEnvVars() {
 	Get.URLPrefix = envAsStr(urlPrefixKey, Get.URLPrefix)
 	Get.Referrers = envAsStrSlice(referrersKey, Get.Referrers)
 	Get.AccessKey = envAsStr(accessKeyKey, Get.AccessKey)
+	Get.UploadDir = envAsStr(uploadDirKey, Get.UploadDir)
 }
 
 // validate the configuration.
