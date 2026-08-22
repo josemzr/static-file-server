@@ -31,6 +31,7 @@ var (
 		Referrers     []string `yaml:"referrers"`
 		AccessKey     string   `yaml:"access-key"`
 		UploadDir     string   `yaml:"upload-dir"`
+		UploadURLBase string   `yaml:"upload-url-base"`
 	}
 )
 
@@ -49,6 +50,7 @@ const (
 	urlPrefixKey   = "URL_PREFIX"
 	accessKeyKey   = "ACCESS_KEY"
 	uploadDirKey   = "UPLOAD_DIR"
+	uploadURLBaseKey = "UPLOAD_URL_BASE"
 )
 
 var (
@@ -66,6 +68,7 @@ var (
 	defaultCors        = false
 	defaultAccessKey   = ""
 	defaultUploadDir   = "uploads"
+	defaultUploadURLBase = ""
 )
 
 func init() {
@@ -88,6 +91,7 @@ func setDefaults() {
 	Get.Cors = defaultCors
 	Get.AccessKey = defaultAccessKey
 	Get.UploadDir = defaultUploadDir
+	Get.UploadURLBase = defaultUploadURLBase
 }
 
 // Load the configuration file.
@@ -141,6 +145,7 @@ func overrideWithEnvVars() {
 	Get.Referrers = envAsStrSlice(referrersKey, Get.Referrers)
 	Get.AccessKey = envAsStr(accessKeyKey, Get.AccessKey)
 	Get.UploadDir = envAsStr(uploadDirKey, Get.UploadDir)
+	Get.UploadURLBase = envAsStr(uploadURLBaseKey, Get.UploadURLBase)
 }
 
 // validate the configuration.

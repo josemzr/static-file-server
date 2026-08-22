@@ -53,6 +53,11 @@ FOLDER=/web
 # demand. Set to an empty string to disable uploads entirely.
 UPLOAD_DIR=uploads
 
+# Optional public base URL prepended to upload responses (e.g.
+# "https://sfs.mcs.sh"). When unset, the scheme and host are detected from
+# the request (X-Forwarded-Proto is honored for reverse proxies).
+UPLOAD_URL_BASE=
+
 # URL path prefix. If 'my.file' is in the root of $FOLDER and $URL_PREFIX is
 # '/my/place' then file is retrieved with 'http://$HOST:$PORT/my/place/my.file'.
 URL_PREFIX=
@@ -185,7 +190,16 @@ curl -X PUT --data-binary @myfile.bin http://localhost:8080/myfile.bin
 ```
 
 Uploaded files are served back immediately, e.g.
-`http://localhost:8080/uploads/myfile.bin`.
+`http://localhost:8080/uploads/myfile.bin`. The response body of a
+successful upload is the absolute URL of the file, e.g.
+
+```
+https://sfs.mcs.sh/uploads/myfile.bin
+```
+
+Set `UPLOAD_URL_BASE=https://sfs.mcs.sh` to force that base; otherwise the
+server uses the request's scheme/host (honoring `X-Forwarded-Proto` for
+reverse proxies).
 
 ### Docker example
 

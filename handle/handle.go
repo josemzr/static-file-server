@@ -127,10 +127,15 @@ func Basic(serveFile FileServerFunc, folder string) http.HandlerFunc {
 //	PUT /uploads/file.txt    -> <folder>/uploads/file.txt
 //	PUT /file.txt            -> <folder>/uploads/file.txt
 //
+// The response body is the absolute URL of the uploaded file (e.g.
+// "https://host/uploads/file.txt"). The URL scheme is taken from the
+// X-Forwarded-Proto header when present (reverse proxies) or from the
+// request's TLS state; the host from the request. Pass uploadURLBase to
+// override the detected base (e.g. "https://sfs.mcs.sh").
 // Paths are sanitized so uploads cannot escape the upload directory.
 // Upload subdirectories are created on demand. All other methods fall through
 // to the wrapped handler.
-func WithUploads(serve http.HandlerFunc, folder, uploadDir string) http.HandlerFunc {
+func WithUploads(serve http.HandlerFunc, folder, uploadDir, uploadURLBase string) http.HandlerFunc {
 	if uploadDir == "" {
 		uploadDir = "uploads"
 	}
@@ -150,7 +155,8 @@ func WithUploads(serve http.HandlerFunc, folder, uploadDir string) http.HandlerF
 		// Normalize the request path, stripping the public upload prefix if
 		// present, then resolve against the upload root.
 		clean := path.Clean("/" + strings.TrimPrefix(r.URL.Path, "/"))
-		if strings.HasPrefix(clean, publicPrefix) {
+		hadPrefix := strings.HasPrefix(clean, publicPrefix)
+		if hadPrefix {
 			clean = path.Clean("/" + strings.TrimPrefix(clean, publicPrefix))
 		}
 		dest := path.Join(root, clean)
@@ -177,8 +183,27 @@ func WithUploads(serve http.HandlerFunc, folder, uploadDir string) http.HandlerF
 			return
 		}
 
+		// Build the absolute URL of the uploaded file.
+		base := uploadURLBase
+		if base == "" {
+			proto := r.Header.Get("X-Forwarded-Proto")
+			if proto == "" {
+				proto = "http"
+				if r.TLS != nil {
+					proto = "https"
+				}
+			}
+			base = proto + "://" + r.Host
+		}
+		// The published URL always carries the upload prefix.
+		urlPath := path.Join("/", uploadDir, clean)
+		if !hadPrefix {
+			urlPath = path.Join("/", clean)
+		}
+		url := strings.TrimSuffix(base, "/") + urlPath
+
 		w.WriteHeader(http.StatusCreated)
-		fmt.Fprintf(w, "uploaded %s\n", clean)
+		fmt.Fprintln(w, url)
 	}
 }
 

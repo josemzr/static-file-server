@@ -77,7 +77,12 @@ func handlerSelector() (handler http.HandlerFunc) {
 
 	// If configured, enable file upload (PUT/POST) into the upload directory.
 	if config.Get.UploadDir != "" {
-		handler = handle.WithUploads(handler, config.Get.Folder, config.Get.UploadDir)
+		handler = handle.WithUploads(
+			handler,
+			config.Get.Folder,
+			config.Get.UploadDir,
+			config.Get.UploadURLBase,
+		)
 	}
 
 	return
