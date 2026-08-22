@@ -195,11 +195,9 @@ func WithUploads(serve http.HandlerFunc, folder, uploadDir, uploadURLBase string
 			}
 			base = proto + "://" + r.Host
 		}
-		// The published URL always carries the upload prefix.
+		// The published URL always carries the upload prefix, even when the
+		// request was addressed without it.
 		urlPath := path.Join("/", uploadDir, clean)
-		if !hadPrefix {
-			urlPath = path.Join("/", clean)
-		}
 		url := strings.TrimSuffix(base, "/") + urlPath
 
 		w.WriteHeader(http.StatusCreated)
