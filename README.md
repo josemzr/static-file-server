@@ -1,8 +1,12 @@
 # static-file-server
 
-<a href="https://github.com/sponsors/halverneus">
+> **🔀 FORK with upload support** — this is a fork of
+> [halverneus/static-file-server](https://github.com/halverneus/static-file-server)
+> that adds **file upload via `PUT`/`POST`** (see
+> [Uploads](#uploads-put--post) section below). Built and published to GHCR as
+> `ghcr.io/josemzr/static-file-server`.
+
 <img src="img/sponsor.svg" />
-</a>
 
 ## Introduction
 
